@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Photo Quote Builder</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <section class="quote-workspace" aria-label="Photo quote request">
+        <div class="panel intro-panel">
+          <div class="brand-row">
+            <div class="brand-mark" aria-hidden="true">PQ</div>
+            <div>
+              <p class="eyebrow">AI estimating assistant</p>
+              <h1>Photo Quote Builder</h1>
+            </div>
+          </div>
+
+          <div class="preview-frame">
+            <img id="previewImage" alt="Selected upload preview">
+            <div id="previewEmpty" class="preview-empty">
+              <span class="camera-icon" aria-hidden="true"></span>
+              <p>Add a phone camera photo or upload an image.</p>
+            </div>
+          </div>
+
+          <div class="flow-list" aria-label="Quote flow">
+            <div>
+              <strong>1</strong>
+              <span>Capture the job photo</span>
+            </div>
+            <div>
+              <strong>2</strong>
+              <span>Add the details that affect price</span>
+            </div>
+            <div>
+              <strong>3</strong>
+              <span>Submit for an AI-assisted estimate</span>
+            </div>
+          </div>
+        </div>
+
+        <form id="quoteForm" class="panel form-panel">
+          <div class="form-header">
+            <p class="eyebrow">New request</p>
+            <h2>Get a quote</h2>
+          </div>
+
+          <label class="upload-box" for="photoInput">
+            <input id="photoInput" name="photo" type="file" accept="image/*" capture="environment">
+            <span class="upload-icon" aria-hidden="true"></span>
+            <span class="upload-title">Use camera or upload photo</span>
+            <span class="upload-meta" id="uploadMeta">JPG, PNG, or HEIC from a phone camera</span>
+          </label>
+
+          <div class="field-grid">
+            <label>
+              <span>Name</span>
+              <input name="name" autocomplete="name" placeholder="Jane Smith" required>
+            </label>
+            <label>
+              <span>Email or phone</span>
+              <input name="contact" autocomplete="email" placeholder="jane@example.com" required>
+            </label>
+          </div>
+
+          <div class="field-grid">
+            <label>
+              <span>Service type</span>
+              <select name="service" required>
+                <option value="">Choose one</option>
+                <option>Repair</option>
+                <option>Installation</option>
+                <option>Cleaning</option>
+                <option>Removal</option>
+                <option>Custom project</option>
+              </select>
+            </label>
+            <label>
+              <span>Urgency</span>
+              <select name="urgency" required>
+                <option>Standard</option>
+                <option>Rush</option>
+                <option>Emergency</option>
+              </select>
+            </label>
+          </div>
+
+          <label>
+            <span>Project location</span>
+            <input name="location" autocomplete="street-address" placeholder="City, ZIP, or address">
+          </label>
+
+          <label>
+            <span>What should the AI know?</span>
+            <textarea name="details" rows="5" placeholder="Size, material, access issues, measurements, preferred timeline, or anything visible in the photo." required></textarea>
+          </label>
+
+          <button class="submit-button" type="submit">
+            <span class="button-icon" aria-hidden="true"></span>
+            Generate quote
+          </button>
+        </form>
+
+        <aside class="panel result-panel" aria-live="polite">
+          <div class="form-header">
+            <p class="eyebrow">Estimate</p>
+            <h2>AI quote</h2>
+          </div>
+          <div id="quoteResult" class="quote-result empty">
+            <p>Your quote will appear here after submission.</p>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
