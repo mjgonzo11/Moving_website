@@ -1,0 +1,296 @@
+import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
+import crypto from "node:crypto";
+
+const bedrock = new BedrockRuntimeClient({});
+const dynamo = DynamoDBDocumentClient.from(new DynamoDBClient({}));
+const ses = new SESv2Client({});
+
+const {
+  ALLOWED_ORIGIN,
+  BEDROCK_MODEL_ID,
+  FROM_EMAIL,
+  LEADS_TABLE,
+  OWNER_EMAIL
+} = process.env;
+
+export async function handler(event) {
+  const headers = corsHeaders();
+
+  try {
+    const input = JSON.parse(event.body || "{}");
+    const lead = normalizeLead(input);
+    const quote = await generateQuote(lead);
+    const now = new Date().toISOString();
+
+    const item = {
+      leadId: crypto.randomUUID(),
+      createdAt: now,
+      updatedAt: now,
+      status: "quoted",
+      ...lead,
+      photo: lead.photo ? { received: true, mimeType: lead.photo.mimeType } : null,
+      quote
+    };
+
+    await dynamo.send(new PutCommand({
+      TableName: LEADS_TABLE,
+      Item: item
+    }));
+
+    await sendNotifications(item);
+
+    return json(200, { leadId: item.leadId, quote }, headers);
+  } catch (error) {
+    console.error(error);
+    return json(error.statusCode || 500, {
+      message: error.publicMessage || "Unable to generate quote right now."
+    }, headers);
+  }
+}
+
+function normalizeLead(input) {
+  const name = requiredText(input.name, "Name");
+  const contact = requiredText(input.contact, "Email or phone");
+  const service = requiredText(input.service, "Service type");
+  const urgency = requiredText(input.urgency, "Urgency");
+  const details = requiredText(input.details, "Project details");
+
+  return {
+    name,
+    contact,
+    customerEmail: extractEmail(contact),
+    service,
+    urgency,
+    location: cleanText(input.location || "", 200),
+    details,
+    photo: parsePhoto(input.photo)
+  };
+}
+
+async function generateQuote(lead) {
+  const manualQuote = calculateManualQuote(lead);
+
+  if (process.env.ENABLE_AI_DESCRIPTION !== "true") {
+    return manualQuote;
+  }
+
+  try {
+    return {
+      ...manualQuote,
+      summary: await generateAiSummary(lead, manualQuote)
+    };
+  } catch (error) {
+    console.error("AI summary failed, using manual summary", error);
+    return manualQuote;
+  }
+}
+
+function calculateManualQuote(lead) {
+  const rules = {
+    Moving: { base: 225, detailRate: 0.42, photoAdd: 45, min: 180 },
+    Delivery: { base: 120, detailRate: 0.28, photoAdd: 25, min: 95 },
+    Cleaning: { base: 145, detailRate: 0.24, photoAdd: 20, min: 110 },
+    JunkRemoval: { base: 185, detailRate: 0.35, photoAdd: 50, min: 140 },
+    "Custom project": { base: 275, detailRate: 0.38, photoAdd: 35, min: 180 }
+  };
+
+  const urgencyMultiplier = {
+    Standard: 1,
+    Rush: 1.2,
+    Emergency: 1.55
+  };
+
+  const serviceRules = rules[lead.service] || rules["Custom project"];
+  const detailScore = Math.min(lead.details.length, 1200);
+  const photoAdjustment = lead.photo ? serviceRules.photoAdd : 0;
+  const low = Math.max(
+    serviceRules.min,
+    Math.round((serviceRules.base + detailScore * serviceRules.detailRate + photoAdjustment) * (urgencyMultiplier[lead.urgency] || 1))
+  );
+  const high = Math.round(low * 1.35 + serviceRules.base * 0.25);
+
+  return {
+    range: `$${low.toLocaleString()} - $${high.toLocaleString()}`,
+    confidence: lead.photo ? "Medium, pending human confirmation" : "Low until a photo is reviewed",
+    timeline: quoteTimeline(lead.urgency),
+    summary: manualSummary(lead)
+  };
+}
+
+async function generateAiSummary(lead, quote) {
+  const content = [
+    {
+      type: "text",
+      text: [
+        "Write one short customer-friendly quote summary for a moving, delivery, cleaning, and junk removal business.",
+        "Do not change the price, timeline, or confidence. Do not invent details.",
+        "Return only compact JSON with key: summary.",
+        `Manual price range: ${quote.range}`,
+        `Manual timeline: ${quote.timeline}`,
+        `Manual confidence: ${quote.confidence}`,
+        `Customer: ${lead.name}`,
+        `Service: ${lead.service}`,
+        `Urgency: ${lead.urgency}`,
+        `Location: ${lead.location || "Not provided"}`,
+        `Photo attached: ${lead.photo ? "Yes" : "No"}`,
+        `Customer details: ${lead.details}`
+      ].join("\n")
+    }
+  ];
+
+  const body = {
+    anthropic_version: "bedrock-2023-05-31",
+    max_tokens: 180,
+    temperature: 0.2,
+    messages: [{ role: "user", content }]
+  };
+
+  const response = await bedrock.send(new InvokeModelCommand({
+    modelId: BEDROCK_MODEL_ID,
+    contentType: "application/json",
+    accept: "application/json",
+    body: JSON.stringify(body)
+  }));
+
+  const decoded = JSON.parse(new TextDecoder().decode(response.body));
+  const text = decoded.content?.find((part) => part.type === "text")?.text || "{}";
+  const parsed = parseJsonObject(text);
+  return cleanText(parsed.summary || quote.summary, 600);
+}
+
+function quoteTimeline(urgency) {
+  if (urgency === "Emergency") return "Same day if schedule allows";
+  if (urgency === "Rush") return "1-2 business days";
+  return "3-5 business days";
+}
+
+function manualSummary(lead) {
+  const service = lead.service.toLowerCase().replace("junkremoval", "junk removal");
+  const location = lead.location ? ` near ${lead.location}` : "";
+  const photoNote = lead.photo ? "The attached photo will help confirm the final quote." : "A photo may be requested before the final quote is confirmed.";
+  return `Thanks for the ${service} request${location}. This estimate is based on your project details and ${lead.urgency.toLowerCase()} priority. ${photoNote}`;
+}
+
+async function sendNotifications(item) {
+  const ownerBody = [
+    `New quote request: ${item.leadId}`,
+    "",
+    `Name: ${item.name}`,
+    `Contact: ${item.contact}`,
+    `Service: ${item.service}`,
+    `Urgency: ${item.urgency}`,
+    `Location: ${item.location || "Not provided"}`,
+    "",
+    `Quote: ${item.quote.range}`,
+    `Timeline: ${item.quote.timeline}`,
+    `Confidence: ${item.quote.confidence}`,
+    "",
+    item.quote.summary,
+    "",
+    "Customer details:",
+    item.details
+  ].join("\n");
+
+  await sendEmail(OWNER_EMAIL, `New quote request from ${item.name}`, ownerBody);
+
+  if (item.customerEmail) {
+    const customerBody = [
+      `Hi ${item.name},`,
+      "",
+      "Thanks for sending your project details. Here is your estimate:",
+      "",
+      `Estimated range: ${item.quote.range}`,
+      `Timeline: ${item.quote.timeline}`,
+      `Confidence: ${item.quote.confidence}`,
+      "",
+      item.quote.summary,
+      "",
+      "A team member will review this and follow up to confirm the final quote."
+    ].join("\n");
+
+    await sendEmail(item.customerEmail, "Your project quote estimate", customerBody);
+  }
+}
+
+async function sendEmail(toAddress, subject, body) {
+  await ses.send(new SendEmailCommand({
+    FromEmailAddress: FROM_EMAIL,
+    Destination: { ToAddresses: [toAddress] },
+    Content: {
+      Simple: {
+        Subject: { Data: subject },
+        Body: { Text: { Data: body } }
+      }
+    }
+  }));
+}
+
+function parsePhoto(value) {
+  if (!value) return null;
+
+  const match = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(value);
+
+  if (!match) {
+    throw badRequest("Photo must be a JPEG, PNG, or WebP data URL.");
+  }
+
+  if (match[2].length > 6_500_000) {
+    throw badRequest("Photo is too large. Please use a smaller image.");
+  }
+
+  return {
+    mimeType: match[1],
+    base64: match[2]
+  };
+}
+
+function requiredText(value, label) {
+  const cleaned = cleanText(value, 3000);
+  if (!cleaned) throw badRequest(`${label} is required.`);
+  return cleaned;
+}
+
+function cleanText(value, maxLength) {
+  return String(value || "").replace(/\s+/g, " ").trim().slice(0, maxLength);
+}
+
+function extractEmail(value) {
+  const match = String(value || "").match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  return match ? match[0].toLowerCase() : null;
+}
+
+function parseJsonObject(text) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    const match = text.match(/\{[\s\S]*\}/);
+    return match ? JSON.parse(match[0]) : {};
+  }
+}
+
+function badRequest(publicMessage) {
+  const error = new Error(publicMessage);
+  error.statusCode = 400;
+  error.publicMessage = publicMessage;
+  return error;
+}
+
+function json(statusCode, body, headers) {
+  return {
+    statusCode,
+    headers,
+    body: JSON.stringify(body)
+  };
+}
+
+function corsHeaders() {
+  return {
+    "access-control-allow-origin": ALLOWED_ORIGIN || "*",
+    "access-control-allow-headers": "content-type",
+    "access-control-allow-methods": "POST,OPTIONS",
+    "content-type": "application/json"
+  };
+}
