@@ -1,148 +1,122 @@
-const form = document.querySelector("#quoteForm");
-const photoInput = document.querySelector("#photoInput");
-const previewFrame = document.querySelector(".preview-frame");
-const previewImage = document.querySelector("#previewImage");
-const uploadMeta = document.querySelector("#uploadMeta");
-const quoteResult = document.querySelector("#quoteResult");
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Photo Quote Builder</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <section class="quote-workspace" aria-label="Photo quote request">
+        <div class="panel intro-panel">
+          <div class="brand-row">
+            <div class="brand-mark" aria-hidden="true">PQ</div>
+            <div>
+              <p class="eyebrow">How it works</p>
+              <h1>Quote Builder</h1>
+            </div>
+          </div>
 
-let selectedPhoto = null;
+          <div class="preview-frame">
+            <img id="previewImage" alt="Selected upload preview">
+            <div id="previewEmpty" class="preview-empty">
+              <span class="camera-icon" aria-hidden="true"></span>
+              <p>Add a phone camera photo or upload an image.</p>
+            </div>
+          </div>
 
-photoInput.addEventListener("change", () => {
-  const [file] = photoInput.files;
-  selectedPhoto = file || null;
+          <div class="flow-list" aria-label="Quote flow">
+            <div>
+              <strong>1</strong>
+              <span>Capture the job photo</span>
+            </div>
+            <div>
+              <strong>2</strong>
+              <span>Add the details that affect price</span>
+            </div>
+            <div>
+              <strong>3</strong>
+              <span>Submit for an AI-assisted estimate</span>
+            </div>
+          </div>
+        </div>
 
-  if (!file) {
-    previewFrame.classList.remove("has-image");
-    previewImage.removeAttribute("src");
-    uploadMeta.textContent = "JPG, PNG, or HEIC from a phone camera";
-    return;
-  }
+        <form id="quoteForm" class="panel form-panel">
+          <div class="form-header">
+            <p class="eyebrow">New request</p>
+            <h2>Get a quote</h2>
+          </div>
 
-  uploadMeta.textContent = `${file.name} (${formatBytes(file.size)})`;
-  previewImage.src = URL.createObjectURL(file);
-  previewFrame.classList.add("has-image");
-});
+          <label class="upload-box" for="photoInput">
+            <input id="photoInput" name="photo" type="file" accept="image/*" capture="environment">
+            <span class="upload-icon" aria-hidden="true"></span>
+            <span class="upload-title">Use camera or upload photo</span>
+            <span class="upload-meta" id="uploadMeta">JPG, PNG, or HEIC from a phone camera</span>
+          </label>
 
-form.addEventListener("submit", async (event) => {
-  event.preventDefault();
+          <div class="field-grid">
+            <label>
+              <span>Name</span>
+              <input name="name" autocomplete="name" placeholder="Jane Smith" required>
+            </label>
+            <label>
+              <span>Email or phone</span>
+              <input name="contact" autocomplete="email" placeholder="jane@example.com" required>
+            </label>
+          </div>
 
-  const data = Object.fromEntries(new FormData(form).entries());
-  quoteResult.className = "quote-result";
-  quoteResult.innerHTML = "<p>Analyzing the photo and project details...</p>";
+          <div class="field-grid">
+            <label>
+              <span>Service type</span>
+              <select name="service" required>
+                <option value="">Choose one</option>
+                <option>Moving</option>
+                <option>Delivery</option>
+                <option>Cleaning</option>
+                <option>JunkRemoval</option>
+                <option>Custom project</option>
+              </select>
+            </label>
+            <label>
+              <span>Urgency</span>
+              <select name="urgency" required>
+                <option>Standard</option>
+                <option>Rush</option>
+                <option>Emergency</option>
+              </select>
+            </label>
+          </div>
 
-  try {
-    const quote = await requestQuote(data, selectedPhoto);
-    renderQuote(quote, data);
-    form.reset();
-    selectedPhoto = null;
-    previewFrame.classList.remove("has-image");
-    previewImage.removeAttribute("src");
-    uploadMeta.textContent = "JPG, PNG, or HEIC from a phone camera";
-  } catch (error) {
-    quoteResult.className = "quote-result";
-    quoteResult.innerHTML = `<p class="note">${escapeHtml(error.message || "Something went wrong. Please try again.")}</p>`;
-  }
-});
+          <label>
+            <span>Project location</span>
+            <input name="location" autocomplete="street-address" placeholder="City, ZIP, or address">
+          </label>
 
-async function requestQuote(data, file) {
-  const apiUrl = window.QUOTE_API_URL;
+          <label>
+            <span>What should the AI know?</span>
+            <textarea name="details" rows="5" placeholder="SqFt, Objects Artciles, access issues, measurements, preferred timeline, or anything visible in the photo." required></textarea>
+          </label>
 
-  if (!apiUrl || apiUrl.includes("replace-with-your-api")) {
-    throw new Error("Missing API URL. Update config.js with your API Gateway endpoint after deploying the AWS backend.");
-  }
+          <button class="submit-button" type="submit">
+            <span class="button-icon" aria-hidden="true"></span>
+            Generate quote
+          </button>
+        </form>
 
-  const payload = {
-    name: data.name,
-    contact: data.contact,
-    service: data.service,
-    urgency: data.urgency,
-    location: data.location,
-    details: data.details,
-    photo: file ? await fileToCompressedDataUrl(file) : null
-  };
+        <aside class="panel result-panel" aria-live="polite">
+          <div class="form-header">
+            <p class="eyebrow">Estimate</p>
+            <h2>AI quote</h2>
+          </div>
+          <div id="quoteResult" class="quote-result empty">
+            <p>Your quote will appear here after submission.</p>
+          </div>
+        </aside>
+      </section>
+    </main>
 
-  const response = await fetch(apiUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
-
-  const result = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    throw new Error(result.message || "The quote API could not process this request.");
-  }
-
-  return result.quote;
-}
-
-function renderQuote(quote, data) {
-  quoteResult.innerHTML = `
-    <div>
-      <div class="price">${quote.range}</div>
-      <p class="note">${quote.summary}</p>
-    </div>
-    <div class="quote-row">
-      <span>Service</span>
-      <strong>${escapeHtml(data.service || "Not selected")}</strong>
-    </div>
-    <div class="quote-row">
-      <span>Timeline</span>
-      <strong>${quote.timeline}</strong>
-    </div>
-    <div class="quote-row">
-      <span>Confidence</span>
-      <strong>${quote.confidence}</strong>
-    </div>
-    <p class="note">A copy of this quote has been saved and emailed to the customer when the contact field contains an email address.</p>
-  `;
-}
-
-function fileToCompressedDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    if (!file.type.startsWith("image/")) {
-      reject(new Error("Please upload an image file."));
-      return;
-    }
-
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      const image = new Image();
-
-      image.onload = () => {
-        const maxSize = 1280;
-        const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.round(image.width * scale);
-        canvas.height = Math.round(image.height * scale);
-
-        const context = canvas.getContext("2d");
-        context.drawImage(image, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL("image/jpeg", 0.82));
-      };
-
-      image.onerror = () => reject(new Error("The selected image could not be read."));
-      image.src = reader.result;
-    };
-
-    reader.onerror = () => reject(new Error("The selected image could not be read."));
-    reader.readAsDataURL(file);
-  });
-}
-
-function formatBytes(bytes) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1048576) return `${Math.round(bytes / 1024)} KB`;
-  return `${(bytes / 1048576).toFixed(1)} MB`;
-}
-
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, (char) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    "\"": "&quot;",
-    "'": "&#039;"
-  }[char]));
-}
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
