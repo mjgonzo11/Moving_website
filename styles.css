@@ -17,7 +17,7 @@
 
 html {
   scroll-behavior: smooth;
-  scroll-snap-type: y mandatory;
+  scroll-snap-type: y proximity;
 }
 
 body {
@@ -89,7 +89,7 @@ textarea {
   display: flex;
   gap: 34px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -111,7 +111,7 @@ footer a:hover {
   border: 1px solid rgba(212, 168, 95, 0.72);
   border-radius: 4px;
   color: var(--brass);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   transition: background 180ms ease, color 180ms ease;
 }
@@ -125,7 +125,7 @@ footer a:hover {
   position: relative;
   min-height: 100svh;
   scroll-snap-align: start;
-  scroll-snap-stop: always;
+  scroll-margin-top: 76px;
 }
 
 .hero-page {
@@ -162,7 +162,7 @@ footer a:hover {
 .kicker {
   margin: 0 0 18px;
   color: var(--brass);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 800;
   letter-spacing: 0;
   text-transform: uppercase;
@@ -303,7 +303,7 @@ h1 {
   align-self: start;
   padding-top: 8px;
   color: #798581;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -315,6 +315,7 @@ h1 {
 .service-list p {
   margin: 0;
   color: #62706c;
+  font-size: 16px;
   line-height: 1.5;
 }
 
@@ -361,7 +362,7 @@ h1 {
 
 .process-steps li > span {
   color: var(--brass);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 800;
 }
 
@@ -374,6 +375,7 @@ h1 {
   max-width: 520px;
   margin-bottom: 0;
   color: #b7c7c3;
+  font-size: 16px;
   line-height: 1.55;
 }
 
@@ -428,6 +430,19 @@ h1 {
   aspect-ratio: 4 / 5;
   border-radius: 4px;
   background: #dbe2dd;
+  cursor: pointer;
+  transition: outline-color 180ms ease, background 180ms ease;
+}
+
+.preview-frame:hover {
+  background: #d2ddd6;
+  outline: 2px solid rgba(26, 129, 120, 0.3);
+  outline-offset: -2px;
+}
+
+.preview-frame:focus-within {
+  outline: 3px solid rgba(26, 129, 120, 0.35);
+  outline-offset: -3px;
 }
 
 .preview-frame img {
@@ -456,7 +471,7 @@ h1 {
 .preview-empty p {
   margin: 0;
   color: #66736f;
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1.5;
 }
 
@@ -476,7 +491,7 @@ h1 {
   gap: 9px;
   margin-top: 14px;
   color: #697571;
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.45;
 }
 
@@ -504,13 +519,13 @@ h1 {
 
 .form-step span {
   color: var(--teal);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
 }
 
 .form-step h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: 18px;
 }
 
 .field-grid {
@@ -523,8 +538,13 @@ label {
   display: grid;
   gap: 6px;
   margin-bottom: 12px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
+}
+
+.quote-visual .preview-frame {
+  gap: 0;
+  margin-bottom: 0;
 }
 
 input,
@@ -536,7 +556,7 @@ textarea {
   padding: 10px 11px;
   color: var(--ink);
   background: rgba(255, 255, 255, 0.88);
-  font-size: 14px;
+  font-size: 16px;
 }
 
 textarea {
@@ -573,7 +593,7 @@ textarea:focus {
 }
 
 .upload-title {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 800;
 }
 
@@ -581,7 +601,7 @@ textarea:focus {
   overflow: hidden;
   max-width: 46%;
   color: #6d7975;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -638,7 +658,7 @@ textarea:focus {
   gap: 12px;
   padding-top: 10px;
   border-top: 1px solid var(--dark-line);
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .quote-row span,
@@ -651,7 +671,7 @@ textarea:focus {
 }
 
 .note {
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.5;
 }
 
@@ -696,7 +716,7 @@ footer {
   padding-top: 28px;
   border-top: 1px solid rgba(255, 255, 255, 0.32);
   color: white;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 footer p {
@@ -755,10 +775,6 @@ footer > a:last-child {
 }
 
 @media (max-width: 720px) {
-  html {
-    scroll-snap-type: y proximity;
-  }
-
   .site-header {
     min-height: 66px;
     padding: 10px 18px;
@@ -769,7 +785,7 @@ footer > a:last-child {
   }
 
   .wordmark {
-    font-size: 13px;
+    font-size: 14px;
   }
 
   .wordmark-mark {
@@ -846,7 +862,7 @@ footer > a:last-child {
   }
 
   .service-list p {
-    font-size: 13px;
+    font-size: 15px;
   }
 
   .process-steps li {
@@ -889,4 +905,5 @@ footer > a:last-child {
     justify-self: start;
   }
 }
+
 
