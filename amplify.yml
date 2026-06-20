@@ -1,12 +1,12 @@
-{
-  "name": "quote-function",
-  "version": "1.0.0",
-  "type": "module",
-  "private": true,
-  "dependencies": {
-    "@aws-sdk/client-bedrock-runtime": "^3.592.0",
-    "@aws-sdk/client-dynamodb": "^3.592.0",
-    "@aws-sdk/client-sesv2": "^3.592.0",
-    "@aws-sdk/lib-dynamodb": "^3.592.0"
-  }
-}
+version: 1
+frontend:
+  phases:
+    build:
+      commands:
+        - printf 'window.QUOTE_API_URL = "%s";\n' "$QUOTE_API_URL" > config.js
+  artifacts:
+    baseDirectory: .
+    files:
+      - "**/*"
+  cache:
+    paths: []
