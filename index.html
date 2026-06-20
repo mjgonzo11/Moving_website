@@ -3,116 +3,158 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Photo Quote Builder</title>
+    <meta name="description" content="Premium moving, delivery, cleaning, and removal services from Amicus Group.">
+    <title>Amicus Group | Moving with precision</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
-    <main class="shell">
-      <section class="quote-workspace" aria-label="Photo quote request">
-        <div class="panel intro-panel">
-          <div class="brand-row">
-            <div class="brand-mark" aria-hidden="true">PQ</div>
-            <div>
-              <p class="eyebrow">How it works</p>
-              <h1>Quote Builder</h1>
-            </div>
-          </div>
+    <header class="site-header">
+      <a class="wordmark" href="#home" aria-label="Amicus Group home">
+        <span class="wordmark-mark" aria-hidden="true">A</span>
+        <span>Amicus Group</span>
+      </a>
+      <nav aria-label="Primary navigation">
+        <a href="#services">Services</a>
+        <a href="#process">Process</a>
+        <a href="#quote">Estimate</a>
+      </nav>
+      <a class="header-cta" href="#quote">Start a quote</a>
+    </header>
 
-          <div class="preview-frame">
-            <img id="previewImage" alt="Selected upload preview">
-            <div id="previewEmpty" class="preview-empty">
-              <span class="camera-icon" aria-hidden="true"></span>
-              <p>Add a phone camera photo or upload an image.</p>
-            </div>
-          </div>
-
-          <div class="flow-list" aria-label="Quote flow">
-            <div>
-              <strong>1</strong>
-              <span>Capture the job photo</span>
-            </div>
-            <div>
-              <strong>2</strong>
-              <span>Add the details that affect price</span>
-            </div>
-            <div>
-              <strong>3</strong>
-              <span>Submit for an AI-assisted estimate</span>
-            </div>
+    <main>
+      <section id="home" class="page hero-page">
+        <img class="hero-media" src="assets/amicus-moving-hero.png" alt="Amicus Group moving crew carefully carrying a sofa to a moving truck">
+        <div class="hero-shade" aria-hidden="true"></div>
+        <div class="hero-content">
+          <p class="kicker">Moving · Delivery · Cleaning · Removal</p>
+          <h1>Move forward.<br>We’ll handle the rest.</h1>
+          <p class="hero-copy">Thoughtful crews, clear estimates, and capable hands for every transition.</p>
+          <div class="hero-actions">
+            <a class="primary-action" href="#quote">Build your estimate <span aria-hidden="true">→</span></a>
+            <a class="text-action" href="#services">Explore services</a>
           </div>
         </div>
+        <a class="scroll-cue" href="#services" aria-label="Scroll to services">
+          <span>Scroll</span><i aria-hidden="true"></i>
+        </a>
+      </section>
 
-        <form id="quoteForm" class="panel form-panel">
-          <div class="form-header">
-            <p class="eyebrow">New request</p>
-            <h2>Get a quote</h2>
+      <section id="services" class="page services-page">
+        <div class="section-heading">
+          <p class="kicker">What we do</p>
+          <h2>One team for the work around your move.</h2>
+          <p>From a single delivery to a complete transition, choose only what you need.</p>
+        </div>
+        <div class="service-list">
+          <article>
+            <span class="service-number">01</span>
+            <div><h3>Moving</h3><p>Careful residential and commercial moves, planned around your space and schedule.</p></div>
+            <a href="#quote" aria-label="Request a moving estimate">↗</a>
+          </article>
+          <article>
+            <span class="service-number">02</span>
+            <div><h3>Delivery</h3><p>Reliable pickup and delivery for furniture, equipment, and oversized items.</p></div>
+            <a href="#quote" aria-label="Request a delivery estimate">↗</a>
+          </article>
+          <article>
+            <span class="service-number">03</span>
+            <div><h3>Cleaning</h3><p>Move-in, move-out, and project cleaning that leaves the space ready.</p></div>
+            <a href="#quote" aria-label="Request a cleaning estimate">↗</a>
+          </article>
+          <article>
+            <span class="service-number">04</span>
+            <div><h3>Removal</h3><p>Responsible junk and unwanted-item removal without the logistical headache.</p></div>
+            <a href="#quote" aria-label="Request a removal estimate">↗</a>
+          </article>
+        </div>
+      </section>
+
+      <section id="process" class="page process-page">
+        <div class="process-intro">
+          <p class="kicker">A clearer process</p>
+          <h2>From photo to plan in three simple steps.</h2>
+          <p>Give us the essentials. Our pricing rules create an initial range, then our team confirms the details.</p>
+          <a class="primary-action" href="#quote">Start your estimate <span aria-hidden="true">→</span></a>
+        </div>
+        <ol class="process-steps">
+          <li><span>01</span><div><h3>Show us the job</h3><p>Add a current photo from your phone so we can understand the scope.</p></div></li>
+          <li><span>02</span><div><h3>Share the details</h3><p>Tell us the service, location, access, timing, and anything unusual.</p></div></li>
+          <li><span>03</span><div><h3>Receive your range</h3><p>Get an immediate estimate and a follow-up email for human confirmation.</p></div></li>
+        </ol>
+      </section>
+
+      <section id="quote" class="page quote-page" aria-label="Photo quote request">
+        <div class="quote-heading">
+          <p class="kicker">Your estimate</p>
+          <h2>Tell us what’s moving.</h2>
+          <p>A few clear details are enough to get started.</p>
+        </div>
+
+        <div class="quote-workspace">
+          <div class="quote-visual">
+            <div class="preview-frame">
+              <img id="previewImage" alt="Selected upload preview">
+              <div id="previewEmpty" class="preview-empty">
+                <span class="upload-glyph" aria-hidden="true">＋</span>
+                <strong>Add a job photo</strong>
+                <p>A clear, current image helps us confirm the scope.</p>
+              </div>
+            </div>
+            <div class="privacy-note"><span aria-hidden="true">●</span> Your details are used only to prepare and follow up on this estimate.</div>
           </div>
 
-          <label class="upload-box" for="photoInput">
-            <input id="photoInput" name="photo" type="file" accept="image/*" capture="environment">
-            <span class="upload-icon" aria-hidden="true"></span>
-            <span class="upload-title">Use camera or upload photo</span>
-            <span class="upload-meta" id="uploadMeta">JPG, PNG, or HEIC from a phone camera</span>
-          </label>
+          <form id="quoteForm" class="quote-form">
+            <div class="form-section">
+              <div class="form-step"><span>01</span><h3>Project</h3></div>
+              <div class="field-grid">
+                <label><span>Service type</span><select name="service" required><option value="">Choose one</option><option>Moving</option><option>Delivery</option><option>Cleaning</option><option>JunkRemoval</option><option>Custom project</option></select></label>
+                <label><span>Urgency</span><select name="urgency" required><option>Standard</option><option>Rush</option><option>Emergency</option></select></label>
+              </div>
+              <label><span>Project location</span><input name="location" autocomplete="street-address" placeholder="City, ZIP, or address"></label>
+            </div>
 
-          <div class="field-grid">
-            <label>
-              <span>Name</span>
-              <input name="name" autocomplete="name" placeholder="Jane Smith" required>
-            </label>
-            <label>
-              <span>Email or phone</span>
-              <input name="contact" autocomplete="email" placeholder="jane@example.com" required>
-            </label>
-          </div>
+            <div class="form-section">
+              <div class="form-step"><span>02</span><h3>Scope</h3></div>
+              <label class="upload-box" for="photoInput">
+                <input id="photoInput" name="photo" type="file" accept="image/*" capture="environment">
+                <span class="upload-title">Use camera or choose a photo</span>
+                <span class="upload-meta" id="uploadMeta">JPG, PNG, or HEIC</span>
+              </label>
+              <label><span>Project details</span><textarea name="details" rows="4" placeholder="Items, square footage, stairs, access, measurements, and preferred timing" required></textarea></label>
+            </div>
 
-          <div class="field-grid">
-            <label>
-              <span>Service type</span>
-              <select name="service" required>
-                <option value="">Choose one</option>
-                <option>Moving</option>
-                <option>Delivery</option>
-                <option>Cleaning</option>
-                <option>JunkRemoval</option>
-                <option>Custom project</option>
-              </select>
-            </label>
-            <label>
-              <span>Urgency</span>
-              <select name="urgency" required>
-                <option>Standard</option>
-                <option>Rush</option>
-                <option>Emergency</option>
-              </select>
-            </label>
-          </div>
+            <div class="form-section">
+              <div class="form-step"><span>03</span><h3>Contact</h3></div>
+              <div class="field-grid">
+                <label><span>Name</span><input name="name" autocomplete="name" placeholder="Jane Smith" required></label>
+                <label><span>Email or phone</span><input name="contact" autocomplete="email" placeholder="jane@example.com" required></label>
+              </div>
+            </div>
 
-          <label>
-            <span>Project location</span>
-            <input name="location" autocomplete="street-address" placeholder="City, ZIP, or address">
-          </label>
+            <button class="submit-button" type="submit">Generate estimate <span aria-hidden="true">→</span></button>
+          </form>
 
-          <label>
-            <span>What should the AI know?</span>
-            <textarea name="details" rows="5" placeholder="SqFt, Objects Artciles, access issues, measurements, preferred timeline, or anything visible in the photo." required></textarea>
-          </label>
+          <aside class="result-panel" aria-live="polite">
+            <p class="kicker">Estimate</p>
+            <div id="quoteResult" class="quote-result empty"><p>Your estimate will appear here after submission.</p></div>
+          </aside>
+        </div>
+      </section>
 
-          <button class="submit-button" type="submit">
-            <span class="button-icon" aria-hidden="true"></span>
-            Generate quote
-          </button>
-        </form>
-
-        <aside class="panel result-panel" aria-live="polite">
-          <div class="form-header">
-            <p class="eyebrow">Estimate</p>
-            <h2>AI quote</h2>
-          </div>
-          <div id="quoteResult" class="quote-result empty">
-            <p>Your quote will appear here after submission.</p>
-          </div>
-        </aside>
+      <section id="contact" class="page contact-page">
+        <div>
+          <p class="kicker">Ready when you are</p>
+          <h2>Let’s make your next move feel lighter.</h2>
+          <a class="primary-action light-action" href="#quote">Get an estimate <span aria-hidden="true">→</span></a>
+        </div>
+        <footer>
+          <a class="wordmark" href="#home"><span class="wordmark-mark" aria-hidden="true">A</span><span>Amicus Group</span></a>
+          <p>Moving, delivery, cleaning, and removal.</p>
+          <a href="#home">Back to top ↑</a>
+        </footer>
       </section>
     </main>
 
