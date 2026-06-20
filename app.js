@@ -79,8 +79,8 @@ async function requestQuote(data, file) {
 function renderQuote(quote, data) {
   quoteResult.innerHTML = `
     <div>
-      <div class="price">${quote.range}</div>
-      <p class="note">${quote.summary}</p>
+      <div class="price">${escapeHtml(quote.range)}</div>
+      <p class="note">${escapeHtml(quote.summary)}</p>
     </div>
     <div class="quote-row">
       <span>Service</span>
@@ -88,13 +88,13 @@ function renderQuote(quote, data) {
     </div>
     <div class="quote-row">
       <span>Timeline</span>
-      <strong>${quote.timeline}</strong>
+      <strong>${escapeHtml(quote.timeline)}</strong>
     </div>
     <div class="quote-row">
       <span>Confidence</span>
-      <strong>${quote.confidence}</strong>
+      <strong>${escapeHtml(quote.confidence)}</strong>
     </div>
-    <p class="note">A copy of this quote has been saved and emailed to the customer when the contact field contains an email address.</p>
+    <p class="note">A copy of this quote has been saved and emailed when an email address was provided.</p>
   `;
 }
 
