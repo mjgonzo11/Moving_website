@@ -95,12 +95,12 @@
 
         <div class="quote-workspace">
           <div class="quote-visual">
-            <label class="preview-frame" for="photoInput" aria-label="Add or replace job photo">
+            <label class="preview-frame" for="photoInput" aria-label="Add or replace job photos">
               <img id="previewImage" alt="Selected upload preview">
               <div id="previewEmpty" class="preview-empty">
                 <span class="upload-glyph" aria-hidden="true">＋</span>
-                <strong>Add a job photo</strong>
-                <p>A clear, current image helps us confirm the scope.</p>
+                <strong>Add job photos</strong>
+                <p>Up to 5 clear, current images help us confirm the scope.</p>
               </div>
             </label>
             <div class="privacy-note"><span aria-hidden="true">●</span> Your details are used only to prepare and follow up on this estimate.</div>
@@ -119,9 +119,9 @@
             <div class="form-section">
               <div class="form-step"><span>02</span><h3>Scope</h3></div>
               <label class="upload-box" for="photoInput">
-                <input id="photoInput" name="photo" type="file" accept="image/*" capture="environment">
-                <span class="upload-title">Use camera or choose a photo</span>
-                <span class="upload-meta" id="uploadMeta">JPG, PNG, or HEIC</span>
+                <input id="photoInput" name="photos" type="file" accept="image/*" multiple>
+                <span class="upload-title">Use camera or choose photos</span>
+                <span class="upload-meta" id="uploadMeta">Up to 5 JPG, PNG, or HEIC photos</span>
               </label>
               <label><span>Project details</span><textarea name="details" rows="4" placeholder="Items, square footage, stairs, access, measurements, and preferred timing" required></textarea></label>
             </div>
@@ -162,4 +162,5 @@
     <script src="app.js"></script>
   </body>
 </html>
+
 
