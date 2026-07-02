@@ -5,21 +5,30 @@ const previewImage = document.querySelector("#previewImage");
 const uploadMeta = document.querySelector("#uploadMeta");
 const quoteResult = document.querySelector("#quoteResult");
 
-let selectedPhoto = null;
+const maxPhotos = 5;
+let selectedPhotos = [];
 
 photoInput.addEventListener("change", () => {
-  const [file] = photoInput.files;
-  selectedPhoto = file || null;
+  const files = Array.from(photoInput.files || []);
+  selectedPhotos = files.slice(0, maxPhotos);
 
-  if (!file) {
+  if (files.length > maxPhotos) {
+    uploadMeta.textContent = `Only the first ${maxPhotos} photos will be uploaded`;
+  }
+
+  if (!selectedPhotos.length) {
     previewFrame.classList.remove("has-image");
     previewImage.removeAttribute("src");
-    uploadMeta.textContent = "JPG, PNG, or HEIC from a phone camera";
+    uploadMeta.textContent = "Up to 5 JPG, PNG, or HEIC photos";
     return;
   }
 
-  uploadMeta.textContent = `${file.name} (${formatBytes(file.size)})`;
-  previewImage.src = URL.createObjectURL(file);
+  if (files.length <= maxPhotos) {
+    const totalBytes = selectedPhotos.reduce((sum, file) => sum + file.size, 0);
+    uploadMeta.textContent = `${selectedPhotos.length} photo${selectedPhotos.length === 1 ? "" : "s"} selected (${formatBytes(totalBytes)})`;
+  }
+
+  previewImage.src = URL.createObjectURL(selectedPhotos[0]);
   previewFrame.classList.add("has-image");
 });
 
@@ -31,20 +40,20 @@ form.addEventListener("submit", async (event) => {
   quoteResult.innerHTML = "<p>Calculating your estimate...</p>";
 
   try {
-    const quote = await requestQuote(data, selectedPhoto);
+    const quote = await requestQuote(data, selectedPhotos);
     renderQuote(quote, data);
     form.reset();
-    selectedPhoto = null;
+    selectedPhotos = [];
     previewFrame.classList.remove("has-image");
     previewImage.removeAttribute("src");
-    uploadMeta.textContent = "JPG, PNG, or HEIC from a phone camera";
+    uploadMeta.textContent = "Up to 5 JPG, PNG, or HEIC photos";
   } catch (error) {
     quoteResult.className = "quote-result";
     quoteResult.innerHTML = `<p class="note">${escapeHtml(error.message || "Something went wrong. Please try again.")}</p>`;
   }
 });
 
-async function requestQuote(data, file) {
+async function requestQuote(data, files) {
   const apiUrl = window.QUOTE_API_URL;
 
   if (!apiUrl || apiUrl.includes("replace-with-your-api")) {
@@ -58,7 +67,7 @@ async function requestQuote(data, file) {
     urgency: data.urgency,
     location: data.location,
     details: data.details,
-    photo: file ? await fileToCompressedDataUrl(file) : null
+    photos: await Promise.all(files.map(fileToCompressedDataUrl))
   };
 
   const response = await fetch(apiUrl, {
@@ -146,4 +155,5 @@ function escapeHtml(value) {
     "'": "&#039;"
   }[char]));
 }
+
 
