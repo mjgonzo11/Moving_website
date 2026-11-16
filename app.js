@@ -6,6 +6,7 @@ const uploadMeta = document.querySelector("#uploadMeta");
 const quoteResult = document.querySelector("#quoteResult");
 
 const maxPhotos = 5;
+const maxPayloadCharacters = 5_500_000;
 let selectedPhotos = [];
 
 photoInput.addEventListener("change", () => {
@@ -42,6 +43,8 @@ form.addEventListener("submit", async (event) => {
   try {
     const quote = await requestQuote(data, selectedPhotos);
     renderQuote(quote, data);
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({ event: "quote_submitted" });
     form.reset();
     selectedPhotos = [];
     previewFrame.classList.remove("has-image");
@@ -60,6 +63,13 @@ async function requestQuote(data, files) {
     throw new Error("Missing API URL. Update config.js with your API Gateway endpoint after deploying the AWS backend.");
   }
 
+  const photos = await Promise.all(files.map(fileToCompressedDataUrl));
+  const photoPayloadSize = photos.reduce((sum, photo) => sum + photo.length, 0);
+
+  if (photoPayloadSize > maxPayloadCharacters) {
+    throw new Error("The selected photos are too large to upload together. Please try fewer photos or smaller screenshots.");
+  }
+
   const payload = {
     name: data.name,
     contact: data.contact,
@@ -67,14 +77,20 @@ async function requestQuote(data, files) {
     urgency: data.urgency,
     location: data.location,
     details: data.details,
-    photos: await Promise.all(files.map(fileToCompressedDataUrl))
+    photos
   };
 
-  const response = await fetch(apiUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
+  let response;
+
+  try {
+    response = await fetch(apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+  } catch {
+    throw new Error("The quote request could not reach the server. If you added photos, try fewer or smaller photos and submit again.");
+  }
 
   const result = await response.json().catch(() => ({}));
 
@@ -120,7 +136,7 @@ function fileToCompressedDataUrl(file) {
       const image = new Image();
 
       image.onload = () => {
-        const maxSize = 1280;
+        const maxSize = 900;
         const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
         const canvas = document.createElement("canvas");
         canvas.width = Math.round(image.width * scale);
@@ -128,7 +144,7 @@ function fileToCompressedDataUrl(file) {
 
         const context = canvas.getContext("2d");
         context.drawImage(image, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL("image/jpeg", 0.82));
+        resolve(canvas.toDataURL("image/jpeg", 0.68));
       };
 
       image.onerror = () => reject(new Error("The selected image could not be read."));
