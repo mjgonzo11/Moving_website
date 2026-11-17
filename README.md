@@ -1,61 +1,82 @@
-# Moving_website
+# Amicus Group — Moving & Service Estimate Website
 
-This is an AWS-ready quote website.
+A responsive website for **Amicus Group**, a service business offering moving, delivery, cleaning, and junk removal. The site introduces the services, explains the estimate process, and provides a photo-based request form for customers.
 
-The frontend is still hosted by AWS Amplify. The pricing rules, optional AI description, email reply, and lead storage run in AWS Lambda behind API Gateway.
+The project combines a lightweight HTML, CSS, and JavaScript frontend with an AWS-oriented serverless quote API design.
 
-## What changed
+## Website Features
 
-- `app.js` now calls your AWS API instead of generating a mock quote in the browser.
-- `config.js` holds the public API URL. It does not contain secrets.
-- `aws-backend/` contains a SAM/CloudFormation backend:
-  - API Gateway HTTP API
-  - Lambda quote function
-  - DynamoDB table for leads
-  - Manual pricing rules for the estimate range, timeline, and confidence
-  - Optional Amazon Bedrock summary text only
-  - Amazon SES emails to the business and customer
+- **Responsive landing page:** Sections for services, the estimate process, and customer requests.
+- **Service selection:** Moving, delivery, cleaning, junk removal, and custom projects.
+- **Photo-based requests:** Customers can select up to five images, preview the first image, and provide details about the job.
+- **Client-side image processing:** Images are resized and compressed before being sent to the API, with a payload-size check.
+- **Estimate form:** Collects service type, urgency, location, project details, and contact information.
+- **Quote results:** Displays the estimated price range, summary, timeline, and confidence returned by the API.
+- **Submission feedback:** Shows loading states and useful error messages if a request fails.
+- **Analytics event:** Sends a `quote_submitted` event to the Google Tag Manager data layer after a successful request.
 
-## AWS setup
+## Technology Stack
 
-1. Verify your sender email in Amazon SES.
-2. If your SES account is still in sandbox mode, also verify any test customer email addresses.
-3. Enable access to the selected Amazon Bedrock text model if `EnableAiDescription` is `true`.
-4. Deploy the backend from `aws-backend/`:
+| Layer | Technology |
+| --- | --- |
+| Frontend | HTML5, CSS3, vanilla JavaScript |
+| Frontend hosting | AWS Amplify Hosting |
+| API design | Amazon API Gateway and AWS Lambda |
+| Lead storage design | Amazon DynamoDB |
+| Email notification design | Amazon Simple Email Service (SES) |
+| Optional AI summary design | Amazon Bedrock |
+| Infrastructure definition | AWS SAM / CloudFormation |
 
-```bash
-sam build
-sam deploy --guided
+The frontend does not calculate prices in the browser. It submits the customer's details to an API and displays the returned estimate. The AWS infrastructure template describes a backend that uses predefined pricing rules, with Bedrock optionally generating customer-friendly summary text rather than determining the price.
+
+## Project Structure
+
+```text
+Moving_website/
+├── index.html       # Website content and estimate form
+├── styles.css       # Responsive layout and visual styling
+├── app.js           # Form handling, image processing, and API requests
+├── config.js        # Public quote API endpoint configuration
+├── amplify.yml      # AWS Amplify build configuration
+├── index.js         # AWS SAM/CloudFormation template (YAML content)
+├── assets/          # Website images and other assets
+└── README.md
 ```
 
-Use these guided deploy values:
+## Running the Frontend
 
-- `AllowedOrigin`: your Amplify site URL, for example `https://main.example.amplifyapp.com`
-- `FromEmail`: the verified SES sender
-- `OwnerEmail`: the inbox that should receive new leads
-- `BedrockModelId`: leave the default lower-cost Haiku model unless you prefer another enabled model
-- `EnableAiDescription`: use `true` for short AI-written summaries, or `false` to skip Bedrock completely
+1. Clone the repository:
 
-After deploy, copy the `QuoteApiUrl` output.
+   ```bash
+   git clone https://github.com/mjgonzo11/Moving_website.git
+   cd Moving_website
+   ```
 
-## Low-cost quote flow
+2. Start a local static web server:
 
-1. Lambda validates the lead.
-2. Lambda calculates the price range with manual service and urgency rules.
-3. If `EnableAiDescription` is `true`, Lambda asks Bedrock for only a short customer-friendly summary.
-4. Lambda saves the lead and quote to DynamoDB.
-5. Lambda sends the customer reply and owner notification through SES.
+   ```bash
+   python -m http.server 8000
+   ```
 
-The AI call does not receive the uploaded image and does not set the price. This keeps token usage much lower and makes pricing easier to control.
+3. Open `http://localhost:8000` in a browser.
 
-## Amplify setup
+The website can be viewed locally without AWS. To submit a quote request, `window.QUOTE_API_URL` in `config.js` must point to a working quote API endpoint.
 
-1. In Amplify Hosting, add an environment variable named `QUOTE_API_URL`.
-2. Set it to the `QuoteApiUrl` from the backend deploy.
-3. Redeploy the Amplify app.
+## AWS Integration
 
-`amplify.yml` writes the deployed API URL into `config.js` during the Amplify build.
+The frontend is configured for AWS Amplify Hosting. During an Amplify build, `amplify.yml` reads the `QUOTE_API_URL` environment variable and writes it to `config.js`.
 
-## Local testing
+The included AWS SAM/CloudFormation template (stored in `index.js`) defines an HTTP API, Lambda function, DynamoDB table, and permissions for SES and optional Bedrock calls. **This repository does not currently include the Lambda handler directory referenced by that template**, so the backend cannot be deployed from the repository as-is. A separately implemented and deployed quote API is required for end-to-end submissions.
 
-You can open `index.html` locally, but the quote feature works only after `config.js` points to a deployed API Gateway URL. Until then the form will show a missing API URL message.
+## Request Flow
+
+1. A customer selects a service and enters project and contact details.
+2. The browser prepares any selected photos and sends the request to the configured API.
+3. The backend processes the request and returns the estimate information.
+4. The website displays the returned price range and supporting details.
+
+Lead storage, customer emails, business notifications, and optional AI-generated descriptions depend on the deployed backend implementation.
+
+## Project Purpose
+
+This project demonstrates responsive frontend development, form validation and image processing, integration with REST APIs, and the design of an AWS serverless workflow for customer estimates and lead management.
