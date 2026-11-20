@@ -4,10 +4,16 @@ const previewFrame = document.querySelector(".preview-frame");
 const previewImage = document.querySelector("#previewImage");
 const uploadMeta = document.querySelector("#uploadMeta");
 const quoteResult = document.querySelector("#quoteResult");
+const submitButton = form.querySelector('button[type="submit"]');
 
 const maxPhotos = 5;
 const maxPayloadCharacters = 5_500_000;
 let selectedPhotos = [];
+let isSubmitting = false;
+const trackedQuoteIds = new Set();
+const quoteIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const pendingSubmissionKey = "amicus:pending-quote-submission";
+let pendingSubmission = null;
 
 photoInput.addEventListener("change", () => {
   const files = Array.from(photoInput.files || []);
@@ -35,16 +41,20 @@ photoInput.addEventListener("change", () => {
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (isSubmitting || !form.reportValidity()) return;
 
-  const data = Object.fromEntries(new FormData(form).entries());
-  quoteResult.className = "quote-result";
-  quoteResult.innerHTML = "<p>Calculating your estimate...</p>";
-
+  isSubmitting = true;
+  const wasDisabled = submitButton?.disabled;
+  if (submitButton) submitButton.disabled = true;
   try {
-    const quote = await requestQuote(data, selectedPhotos);
+    const data = Object.fromEntries(new FormData(form).entries());
+    quoteResult.className = "quote-result";
+    quoteResult.innerHTML = "<p>Calculating your estimate...</p>";
+
+    const { quote, leadId, submissionId } = await requestQuote(data, selectedPhotos);
     renderQuote(quote, data);
-    window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push({ event: "quote_submitted" });
+    trackQuoteSubmission(leadId, submissionId);
+    clearPendingSubmission();
     form.reset();
     selectedPhotos = [];
     previewFrame.classList.remove("has-image");
@@ -53,6 +63,9 @@ form.addEventListener("submit", async (event) => {
   } catch (error) {
     quoteResult.className = "quote-result";
     quoteResult.innerHTML = `<p class="note">${escapeHtml(error.message || "Something went wrong. Please try again.")}</p>`;
+  } finally {
+    isSubmitting = false;
+    if (submitButton) submitButton.disabled = wasDisabled;
   }
 });
 
@@ -79,6 +92,8 @@ async function requestQuote(data, files) {
     details: data.details,
     photos
   };
+  const body = JSON.stringify(payload);
+  const submissionId = await getSubmissionId(body);
 
   let response;
 
@@ -86,19 +101,110 @@ async function requestQuote(data, files) {
     response = await fetch(apiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      body
     });
   } catch {
     throw new Error("The quote request could not reach the server. If you added photos, try fewer or smaller photos and submit again.");
   }
 
-  const result = await response.json().catch(() => ({}));
+  const result = await response.json().catch(() => null);
 
   if (!response.ok) {
-    throw new Error(result.message || "The quote API could not process this request.");
+    throw new Error(result?.message || "The quote API could not process this request.");
   }
 
-  return result.quote;
+  const quote = result?.quote;
+  if (!quote || !["range", "summary", "timeline", "confidence"].every(
+    (field) => typeof quote[field] === "string" && quote[field].trim()
+  )) {
+    throw new Error("The quote API returned an incomplete estimate. Please try again.");
+  }
+
+  return { quote, leadId: result.leadId, submissionId };
+}
+
+async function getSubmissionId(body) {
+  if (pendingSubmission?.body === body) return pendingSubmission.id;
+
+  let fingerprint;
+  let id;
+  try {
+    // Store only a digest and a random ID so retries can survive a page reload.
+    const digest = await window.crypto.subtle.digest("SHA-256", new TextEncoder().encode(body));
+    fingerprint = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+    const stored = JSON.parse(window.sessionStorage.getItem(pendingSubmissionKey) || "null");
+    if (stored?.fingerprint === fingerprint && typeof stored.id === "string" &&
+        (quoteIdPattern.test(stored.id) || /^quote-[a-z0-9]+-[a-z0-9]+$/.test(stored.id))) {
+      id = stored.id;
+    }
+  } catch {
+    // Memory still preserves retry identity if hashing or storage is blocked.
+  }
+
+  id = id || createSubmissionId();
+  pendingSubmission = { body, id };
+  if (fingerprint) {
+    try {
+      window.sessionStorage.setItem(pendingSubmissionKey, JSON.stringify({ fingerprint, id }));
+    } catch {
+      // No request data is persisted when storage is unavailable.
+    }
+  }
+  return id;
+}
+
+function clearPendingSubmission() {
+  pendingSubmission = null;
+  try {
+    window.sessionStorage.removeItem(pendingSubmissionKey);
+  } catch {
+    // A successful quote does not depend on storage access.
+  }
+}
+
+function createSubmissionId() {
+  try {
+    if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+  } catch {
+    // Tracking must not block submission in restricted browser contexts.
+  }
+  return `quote-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+}
+
+function trackQuoteSubmission(leadId, submissionId) {
+  // Queue only a success event; GTM owns the configurable Ads ID and label.
+  try {
+    const transactionId = typeof leadId === "string" && quoteIdPattern.test(leadId)
+      ? leadId.toLowerCase()
+      : submissionId;
+    const storageKey = `amicus:quote-conversion:${transactionId}`;
+    if (trackedQuoteIds.has(transactionId)) return;
+    try {
+      if (window.sessionStorage.getItem(storageKey) === "queued") return;
+    } catch {
+      // In-memory deduplication still works when storage is unavailable.
+    }
+
+    trackedQuoteIds.add(transactionId);
+    try {
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({
+        event: "quote_submitted",
+        transaction_id: transactionId
+      });
+    } catch (error) {
+      trackedQuoteIds.delete(transactionId);
+      throw error;
+    }
+
+    try {
+      window.sessionStorage.setItem(storageKey, "queued");
+    } catch {
+      // The event is already queued and protected in memory.
+    }
+  } catch (error) {
+    console.warn("Quote succeeded, but conversion tracking could not be queued.", error);
+  }
 }
 
 function renderQuote(quote, data) {
@@ -171,5 +277,6 @@ function escapeHtml(value) {
     "'": "&#039;"
   }[char]));
 }
+
 
 
